@@ -49,6 +49,19 @@ def registrar_receita(resumo, tipo):
         st.error(f"Erro ao registrar a receita: {e}")
         return False
 
+# Função para carregar as receitas da aba "Base"
+def carregar_receitas():
+    # Caminho para o arquivo Excel
+    arquivo_excel = "FIN_TC1.xlsx"
+    
+    try:
+        # Carrega a planilha Excel e acessa a aba "Base"
+        df = pd.read_excel(arquivo_excel, sheet_name="Base", engine="openpyxl")
+        return df
+    except Exception as e:
+        st.error(f"Erro ao carregar as receitas: {e}")
+        return None
+
 # Função para verificar login
 def verificar_login(usuario, senha):
     if usuario in credenciais and credenciais[usuario] == senha:
@@ -78,7 +91,7 @@ def main():
     else:
         # Tela inicial após o login
         st.sidebar.title("Menu")
-        opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Receitas"])
+        opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Receitas", "Listar Receitas"])
 
         if opcao == "Início":
             st.write("Bem-vindo à tela inicial!")
@@ -105,6 +118,18 @@ def main():
                             st.error("Não foi possível salvar a receita.")
             else:
                 st.error("Não foi possível carregar os tipos de receita. Verifique o arquivo no repositório.")
+
+        elif opcao == "Listar Receitas":
+            st.header("Receitas Cadastradas")
+
+            # Carrega as receitas da aba "Base"
+            df_receitas = carregar_receitas()
+
+            if df_receitas is not None and not df_receitas.empty:
+                # Exibe as receitas em uma tabela
+                st.dataframe(df_receitas)
+            else:
+                st.info("Nenhuma receita cadastrada.")
 
 # Executa o aplicativo
 if __name__ == "__main__":

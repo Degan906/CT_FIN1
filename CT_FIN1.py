@@ -9,19 +9,30 @@ credenciais = {
     "vanessa.degan": "12345"
 }
 
-# Função para carregar os tipos de receita do Excel via URL
-def carregar_tipos_receita():
+# Função para carregar os tipos de categoria do Excel via URL
+def carregar_categorias():
     url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
     try:
         # Carrega a planilha Excel e acessa a aba "Tipo"
         df = pd.read_excel(url, sheet_name="Tipo", engine="openpyxl")
         return df["Tipo"].tolist()  # Retorna os tipos como uma lista
     except Exception as e:
-        st.error(f"Erro ao carregar os tipos de receita: {e}")
+        st.error(f"Erro ao carregar as categorias: {e}")
         return []
 
-# Função para registrar uma nova receita na aba "Base"
-def registrar_receita(resumo, tipo):
+# Função para carregar os status da aba "Status"
+def carregar_status():
+    url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
+    try:
+        # Carrega a planilha Excel e acessa a aba "Status"
+        df = pd.read_excel(url, sheet_name="Status", engine="openpyxl")
+        return df["Status"].tolist()  # Retorna os status como uma lista
+    except Exception as e:
+        st.error(f"Erro ao carregar os status: {e}")
+        return []
+
+# Função para registrar um novo registro na aba "Base"
+def registrar_registro(categoria, data_pagamento, valor, tag, status):
     # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
     
@@ -40,18 +51,21 @@ def registrar_receita(resumo, tipo):
         proxima_linha = sheet.max_row + 1
         
         # Adiciona os dados na próxima linha
-        sheet.cell(row=proxima_linha, column=1, value=resumo)  # Coluna 1: Resumo
-        sheet.cell(row=proxima_linha, column=2, value=tipo)    # Coluna 2: Tipo
+        sheet.cell(row=proxima_linha, column=1, value=categoria)         # Coluna 1: Categoria
+        sheet.cell(row=proxima_linha, column=2, value=data_pagamento)   # Coluna 2: Data de Pagamento
+        sheet.cell(row=proxima_linha, column=3, value=valor)            # Coluna 3: Valor (R$)
+        sheet.cell(row=proxima_linha, column=4, value=tag)              # Coluna 4: Tag
+        sheet.cell(row=proxima_linha, column=5, value=status)           # Coluna 5: Status
         
         # Salva o arquivo Excel
         workbook.save(arquivo_excel)
         return True
     except Exception as e:
-        st.error(f"Erro ao registrar a receita: {e}")
+        st.error(f"Erro ao registrar o registro: {e}")
         return False
 
-# Função para carregar as receitas da aba "Base"
-def carregar_receitas():
+# Função para carregar os registros da aba "Base"
+def carregar_registros():
     # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
     
@@ -60,7 +74,7 @@ def carregar_receitas():
         df = pd.read_excel(arquivo_excel, sheet_name="Base", engine="openpyxl")
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar as receitas: {e}")
+        st.error(f"Erro ao carregar os registros: {e}")
         return None
 
 # Função para baixar a planilha
@@ -112,45 +126,49 @@ def main():
     else:
         # Tela inicial após o login
         st.sidebar.title("Menu")
-        opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Receitas", "Listar Receitas", "Baixar Planilha"])
+        opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Registro", "Listar Registros", "Baixar Planilha"])
 
         if opcao == "Início":
             st.write("Bem-vindo à tela inicial!")
             st.write("Use o menu lateral para navegar.")
 
-        elif opcao == "Criar Receitas":
-            st.header("Criar Nova Receita")
+        elif opcao == "Criar Registro":
+            st.header("Criar Novo Registro")
 
-            # Carrega os tipos de receita do Excel
-            tipos = carregar_tipos_receita()
+            # Carrega as categorias e status do Excel
+            categorias = carregar_categorias()
+            status_list = carregar_status()
 
-            if tipos:
-                resumo = st.text_input("Resumo da Receita")
-                tipo = st.selectbox("Tipo de Receita", tipos)
+            if categorias and status_list:
+                categoria = st.selectbox("Categoria", categorias)
+                data_pagamento = st.date_input("Data de Pagamento")
+                valor = st.number_input("Valor (R$)", min_value=0.0, step=0.01)
+                tag = st.text_input("Tag (Label)")
+                status = st.selectbox("Status", status_list)
 
-                if st.button("Salvar Receita"):
-                    if resumo.strip() == "":
-                        st.error("O campo 'Resumo' é obrigatório.")
+                if st.button("Salvar Registro"):
+                    if not categoria or not data_pagamento or not valor or not status:
+                        st.error("Todos os campos obrigatórios devem ser preenchidos.")
                     else:
-                        # Registra a receita na aba "Base"
-                        if registrar_receita(resumo, tipo):
-                            st.success(f"Receita salva com sucesso!\nResumo: {resumo}\nTipo: {tipo}")
+                        # Registra o registro na aba "Base"
+                        if registrar_registro(categoria, data_pagamento, valor, tag, status):
+                            st.success("Registro salvo com sucesso!")
                         else:
-                            st.error("Não foi possível salvar a receita.")
+                            st.error("Não foi possível salvar o registro.")
             else:
-                st.error("Não foi possível carregar os tipos de receita. Verifique o arquivo no repositório.")
+                st.error("Não foi possível carregar as categorias ou status. Verifique o arquivo no repositório.")
 
-        elif opcao == "Listar Receitas":
-            st.header("Receitas Cadastradas")
+        elif opcao == "Listar Registros":
+            st.header("Registros Cadastrados")
 
-            # Carrega as receitas da aba "Base"
-            df_receitas = carregar_receitas()
+            # Carrega os registros da aba "Base"
+            df_registros = carregar_registros()
 
-            if df_receitas is not None and not df_receitas.empty:
-                # Exibe as receitas em uma tabela
-                st.dataframe(df_receitas)
+            if df_registros is not None and not df_registros.empty:
+                # Exibe os registros em uma tabela
+                st.dataframe(df_registros)
             else:
-                st.info("Nenhuma receita cadastrada.")
+                st.info("Nenhum registro cadastrado.")
 
         elif opcao == "Baixar Planilha":
             st.header("Baixar Planilha")

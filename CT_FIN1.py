@@ -50,7 +50,7 @@ def registrar_registro(categoria, data_pagamento, valor, tag, status):
         # Encontra a próxima linha vazia
         proxima_linha = sheet.max_row + 1
         
-        # Adiciona os dados na próxima linha
+        # Adiciona os dados nas colunas corretas
         sheet.cell(row=proxima_linha, column=1, value=categoria)         # Coluna 1: Categoria
         sheet.cell(row=proxima_linha, column=2, value=data_pagamento)   # Coluna 2: Data de Pagamento
         sheet.cell(row=proxima_linha, column=3, value=valor)            # Coluna 3: Valor (R$)

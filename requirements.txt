@@ -3,3 +3,7 @@ requests==2.31.0
 pytz==2023.3
 plotly==5.18.0
 PyGithub
+streamlit
+pandas
+openpyxl
+xlrd

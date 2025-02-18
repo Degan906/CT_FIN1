@@ -4,15 +4,15 @@ import pandas as pd
 # Função para carregar os dados do Excel via URL
 def carregar_dados_login():
     # URL "raw" do arquivo no GitHub
-    url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
+    url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xls"
     try:
         # Tenta carregar a planilha Excel e acessar a aba "Login"
-        df = pd.read_excel(url, sheet_name="Login")
+        df = pd.read_excel(url, sheet_name="Login", engine="xlrd")
         return df
     except Exception as e:
         # Exibe mensagens de erro específicas
-        if "HTTP Error 404" in str(e):
-            st.error("Erro: O arquivo não foi encontrado no GitHub. Verifique a URL e a visibilidade do repositório.")
+        if "Worksheet named 'Login' not found" in str(e):
+            st.error("Erro: A aba 'Login' não foi encontrada no arquivo Excel.")
         else:
             st.error(f"Erro ao carregar o arquivo Excel: {e}")
         return None
@@ -21,7 +21,7 @@ def carregar_dados_login():
 def verificar_login(usuario, senha, df):
     if df is not None:
         # Filtra o DataFrame para encontrar o usuário e senha correspondentes
-        filtro = (df["Usuário"] == usuario) & (df["Senha"] == senha)
+        filtro = (df["Login"] == usuario) & (df["Senha"] == senha)
         resultado = df[filtro]
         return not resultado.empty
     return False

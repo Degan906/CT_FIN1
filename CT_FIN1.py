@@ -25,8 +25,13 @@ def registrar_receita(resumo, tipo):
     arquivo_excel = "FIN_TC1.xlsx"
     
     try:
-        # Carrega o arquivo Excel existente
-        workbook = load_workbook(arquivo_excel)
+        # Verifica se o arquivo existe
+        try:
+            workbook = load_workbook(arquivo_excel)
+            st.write("Arquivo Excel carregado com sucesso.")
+        except FileNotFoundError:
+            st.error(f"Erro: O arquivo '{arquivo_excel}' não foi encontrado.")
+            return False
         
         # Acessa a aba "Base"
         if "Base" not in workbook.sheetnames:
@@ -34,16 +39,20 @@ def registrar_receita(resumo, tipo):
             return False
         
         sheet = workbook["Base"]
+        st.write("Aba 'Base' acessada com sucesso.")
         
         # Encontra a próxima linha vazia
         proxima_linha = sheet.max_row + 1
+        st.write(f"Próxima linha disponível: {proxima_linha}")
         
         # Adiciona os dados na próxima linha
         sheet.cell(row=proxima_linha, column=1, value=resumo)  # Coluna 1: Resumo
         sheet.cell(row=proxima_linha, column=2, value=tipo)    # Coluna 2: Tipo
+        st.write("Dados adicionados à planilha.")
         
         # Salva o arquivo Excel
         workbook.save(arquivo_excel)
+        st.write("Arquivo Excel salvo com sucesso.")
         return True
     except Exception as e:
         st.error(f"Erro ao registrar a receita: {e}")

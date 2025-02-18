@@ -6,11 +6,15 @@ def carregar_dados_login():
     # URL "raw" do arquivo no GitHub
     url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xls"
     try:
-        # Carrega a planilha Excel e acessa a aba "Login"
+        # Tenta carregar a planilha Excel e acessar a aba "Login"
         df = pd.read_excel(url, sheet_name="Login")
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar o arquivo Excel: {e}")
+        # Exibe mensagens de erro específicas
+        if "HTTP Error 404" in str(e):
+            st.error("Erro: O arquivo não foi encontrado no GitHub. Verifique a URL e a visibilidade do repositório.")
+        else:
+            st.error(f"Erro ao carregar o arquivo Excel: {e}")
         return None
 
 # Função para verificar login

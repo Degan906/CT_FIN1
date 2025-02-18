@@ -43,7 +43,7 @@ def carregar_status():
         return []
 
 # Função para registrar um novo registro na aba "Base"
-def registrar_registro(tipo, categoria, data_pagamento, valor, tag, status):
+def registrar_registro(tipo, categoria, data_pagamento, valor, tag, status, tipo_conta, parcelas=None):
     # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
     
@@ -68,6 +68,8 @@ def registrar_registro(tipo, categoria, data_pagamento, valor, tag, status):
         sheet.cell(row=proxima_linha, column=4, value=valor)           # Coluna 4: R$
         sheet.cell(row=proxima_linha, column=5, value=tag)             # Coluna 5: Tag
         sheet.cell(row=proxima_linha, column=6, value=status)          # Coluna 6: Status
+        sheet.cell(row=proxima_linha, column=7, value=tipo_conta)      # Coluna 7: Tipo de Conta
+        sheet.cell(row=proxima_linha, column=8, value=parcelas)        # Coluna 8: Parcelas (se aplicável)
         
         # Salva o arquivo Excel
         workbook.save(arquivo_excel)
@@ -160,12 +162,18 @@ def main():
                 tag = st.text_input("Tag (Label)")
                 status = st.selectbox("Status", status_list)
 
+                # Nova funcionalidade: Tipo de Conta
+                tipo_conta = st.selectbox("Tipo de Conta", ["Fixa", "Parcelada"])
+                parcelas = None
+                if tipo_conta == "Parcelada":
+                    parcelas = st.number_input("Número de Parcelas", min_value=1, step=1)
+
                 if st.button("Salvar Registro"):
                     if not tipo or not categoria or not data_pagamento or not valor or not status:
                         st.error("Todos os campos obrigatórios devem ser preenchidos.")
                     else:
                         # Registra o registro na aba "Base"
-                        if registrar_registro(tipo, categoria, data_pagamento, valor, tag, status):
+                        if registrar_registro(tipo, categoria, data_pagamento, valor, tag, status, tipo_conta, parcelas):
                             st.success("Registro salvo com sucesso!")
                         else:
                             st.error("Não foi possível salvar o registro.")

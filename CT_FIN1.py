@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from openpyxl import load_workbook
+from io import BytesIO
 
 # Dados de login (usuário e senha)
 credenciais = {
@@ -25,13 +26,8 @@ def registrar_receita(resumo, tipo):
     arquivo_excel = "FIN_TC1.xlsx"
     
     try:
-        # Verifica se o arquivo existe
-        try:
-            workbook = load_workbook(arquivo_excel)
-            st.write("Arquivo Excel carregado com sucesso.")
-        except FileNotFoundError:
-            st.error(f"Erro: O arquivo '{arquivo_excel}' não foi encontrado.")
-            return False
+        # Carrega o arquivo Excel existente
+        workbook = load_workbook(arquivo_excel)
         
         # Acessa a aba "Base"
         if "Base" not in workbook.sheetnames:
@@ -39,20 +35,16 @@ def registrar_receita(resumo, tipo):
             return False
         
         sheet = workbook["Base"]
-        st.write("Aba 'Base' acessada com sucesso.")
         
         # Encontra a próxima linha vazia
         proxima_linha = sheet.max_row + 1
-        st.write(f"Próxima linha disponível: {proxima_linha}")
         
         # Adiciona os dados na próxima linha
         sheet.cell(row=proxima_linha, column=1, value=resumo)  # Coluna 1: Resumo
         sheet.cell(row=proxima_linha, column=2, value=tipo)    # Coluna 2: Tipo
-        st.write("Dados adicionados à planilha.")
         
         # Salva o arquivo Excel
         workbook.save(arquivo_excel)
-        st.write("Arquivo Excel salvo com sucesso.")
         return True
     except Exception as e:
         st.error(f"Erro ao registrar a receita: {e}")
@@ -70,6 +62,26 @@ def carregar_receitas():
     except Exception as e:
         st.error(f"Erro ao carregar as receitas: {e}")
         return None
+
+# Função para baixar a planilha
+def baixar_planilha():
+    # Caminho para o arquivo Excel
+    arquivo_excel = "FIN_TC1.xlsx"
+    
+    try:
+        # Lê o arquivo Excel como bytes
+        with open(arquivo_excel, "rb") as f:
+            bytes_data = f.read()
+        
+        # Cria um botão de download
+        st.download_button(
+            label="Baixar Planilha",
+            data=bytes_data,
+            file_name="FIN_TC1.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    except FileNotFoundError:
+        st.error("Erro: O arquivo 'FIN_TC1.xlsx' não foi encontrado.")
 
 # Função para verificar login
 def verificar_login(usuario, senha):
@@ -100,7 +112,7 @@ def main():
     else:
         # Tela inicial após o login
         st.sidebar.title("Menu")
-        opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Receitas", "Listar Receitas"])
+        opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Receitas", "Listar Receitas", "Baixar Planilha"])
 
         if opcao == "Início":
             st.write("Bem-vindo à tela inicial!")
@@ -139,6 +151,11 @@ def main():
                 st.dataframe(df_receitas)
             else:
                 st.info("Nenhuma receita cadastrada.")
+
+        elif opcao == "Baixar Planilha":
+            st.header("Baixar Planilha")
+            st.write("Clique no botão abaixo para baixar a planilha atualizada.")
+            baixar_planilha()
 
 # Executa o aplicativo
 if __name__ == "__main__":

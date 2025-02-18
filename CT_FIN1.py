@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from openpyxl import load_workbook
 
 # Dados de login (usuário e senha)
 credenciais = {
@@ -17,6 +18,36 @@ def carregar_tipos_receita():
     except Exception as e:
         st.error(f"Erro ao carregar os tipos de receita: {e}")
         return []
+
+# Função para registrar uma nova receita na aba "Base"
+def registrar_receita(resumo, tipo):
+    # Caminho para o arquivo Excel
+    arquivo_excel = "FIN_TC1.xlsx"
+    
+    try:
+        # Carrega o arquivo Excel existente
+        workbook = load_workbook(arquivo_excel)
+        
+        # Acessa a aba "Base"
+        if "Base" not in workbook.sheetnames:
+            st.error("A aba 'Base' não foi encontrada no arquivo Excel.")
+            return False
+        
+        sheet = workbook["Base"]
+        
+        # Encontra a próxima linha vazia
+        proxima_linha = sheet.max_row + 1
+        
+        # Adiciona os dados na próxima linha
+        sheet.cell(row=proxima_linha, column=1, value=resumo)  # Coluna 1: Resumo
+        sheet.cell(row=proxima_linha, column=2, value=tipo)    # Coluna 2: Tipo
+        
+        # Salva o arquivo Excel
+        workbook.save(arquivo_excel)
+        return True
+    except Exception as e:
+        st.error(f"Erro ao registrar a receita: {e}")
+        return False
 
 # Função para verificar login
 def verificar_login(usuario, senha):
@@ -67,7 +98,11 @@ def main():
                     if resumo.strip() == "":
                         st.error("O campo 'Resumo' é obrigatório.")
                     else:
-                        st.success(f"Receita salva com sucesso!\nResumo: {resumo}\nTipo: {tipo}")
+                        # Registra a receita na aba "Base"
+                        if registrar_receita(resumo, tipo):
+                            st.success(f"Receita salva com sucesso!\nResumo: {resumo}\nTipo: {tipo}")
+                        else:
+                            st.error("Não foi possível salvar a receita.")
             else:
                 st.error("Não foi possível carregar os tipos de receita. Verifique o arquivo no repositório.")
 

@@ -9,13 +9,24 @@ credenciais = {
     "vanessa.degan": "12345"
 }
 
-# Função para carregar os tipos de categoria do Excel via URL
-def carregar_categorias():
+# Função para carregar os tipos da aba "Tipo"
+def carregar_tipos():
     url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
     try:
         # Carrega a planilha Excel e acessa a aba "Tipo"
         df = pd.read_excel(url, sheet_name="Tipo", engine="openpyxl")
         return df["Tipo"].tolist()  # Retorna os tipos como uma lista
+    except Exception as e:
+        st.error(f"Erro ao carregar os tipos: {e}")
+        return []
+
+# Função para carregar as categorias da aba "Categoria"
+def carregar_categorias():
+    url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
+    try:
+        # Carrega a planilha Excel e acessa a aba "Categoria"
+        df = pd.read_excel(url, sheet_name="Categoria", engine="openpyxl")
+        return df["Categoria"].tolist()  # Retorna as categorias como uma lista
     except Exception as e:
         st.error(f"Erro ao carregar as categorias: {e}")
         return []
@@ -32,7 +43,7 @@ def carregar_status():
         return []
 
 # Função para registrar um novo registro na aba "Base"
-def registrar_registro(categoria, data_pagamento, valor, tag, status):
+def registrar_registro(tipo, categoria, valor, tag, status):
     # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
     
@@ -51,11 +62,11 @@ def registrar_registro(categoria, data_pagamento, valor, tag, status):
         proxima_linha = sheet.max_row + 1
         
         # Adiciona os dados nas colunas corretas
-        sheet.cell(row=proxima_linha, column=1, value=categoria)         # Coluna 1: Categoria
-        sheet.cell(row=proxima_linha, column=2, value=data_pagamento)   # Coluna 2: Data de Pagamento
-        sheet.cell(row=proxima_linha, column=3, value=valor)            # Coluna 3: Valor (R$)
-        sheet.cell(row=proxima_linha, column=4, value=tag)              # Coluna 4: Tag
-        sheet.cell(row=proxima_linha, column=5, value=status)           # Coluna 5: Status
+        sheet.cell(row=proxima_linha, column=1, value=tipo)         # Coluna 1: Tipo
+        sheet.cell(row=proxima_linha, column=2, value=categoria)   # Coluna 2: Categoria
+        sheet.cell(row=proxima_linha, column=3, value=valor)       # Coluna 3: Valor (R$)
+        sheet.cell(row=proxima_linha, column=4, value=tag)         # Coluna 4: Tag
+        sheet.cell(row=proxima_linha, column=5, value=status)      # Coluna 5: Status
         
         # Salva o arquivo Excel
         workbook.save(arquivo_excel)
@@ -135,28 +146,29 @@ def main():
         elif opcao == "Criar Registro":
             st.header("Criar Novo Registro")
 
-            # Carrega as categorias e status do Excel
+            # Carrega os tipos, categorias e status do Excel
+            tipos = carregar_tipos()
             categorias = carregar_categorias()
             status_list = carregar_status()
 
-            if categorias and status_list:
+            if tipos and categorias and status_list:
+                tipo = st.selectbox("Tipo", tipos)
                 categoria = st.selectbox("Categoria", categorias)
-                data_pagamento = st.date_input("Data de Pagamento")
                 valor = st.number_input("Valor (R$)", min_value=0.0, step=0.01)
                 tag = st.text_input("Tag (Label)")
                 status = st.selectbox("Status", status_list)
 
                 if st.button("Salvar Registro"):
-                    if not categoria or not data_pagamento or not valor or not status:
+                    if not tipo or not categoria or not valor or not status:
                         st.error("Todos os campos obrigatórios devem ser preenchidos.")
                     else:
                         # Registra o registro na aba "Base"
-                        if registrar_registro(categoria, data_pagamento, valor, tag, status):
+                        if registrar_registro(tipo, categoria, valor, tag, status):
                             st.success("Registro salvo com sucesso!")
                         else:
                             st.error("Não foi possível salvar o registro.")
             else:
-                st.error("Não foi possível carregar as categorias ou status. Verifique o arquivo no repositório.")
+                st.error("Não foi possível carregar os tipos, categorias ou status. Verifique o arquivo no repositório.")
 
         elif opcao == "Listar Registros":
             st.header("Registros Cadastrados")

@@ -26,8 +26,7 @@ def carregar_categorias():
     try:
         # Carrega a planilha Excel e acessa a aba "Categoria"
         df = pd.read_excel(url, sheet_name="Categoria", engine="openpyxl")
-        st.write("Colunas disponíveis na aba 'Categoria':", df.columns.tolist())  # Exibe as colunas
-        return df["Categoria"].tolist()  # Retorna as categorias como uma lista
+        return df["Categorias"].tolist()  # Retorna as categorias como uma lista
     except Exception as e:
         st.error(f"Erro ao carregar as categorias: {e}")
         return []
@@ -44,7 +43,7 @@ def carregar_status():
         return []
 
 # Função para registrar um novo registro na aba "Base"
-def registrar_registro(tipo, categoria, valor, tag, status):
+def registrar_registro(tipo, categoria, data_pagamento, valor, tag, status):
     # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
     
@@ -63,11 +62,12 @@ def registrar_registro(tipo, categoria, valor, tag, status):
         proxima_linha = sheet.max_row + 1
         
         # Adiciona os dados nas colunas corretas
-        sheet.cell(row=proxima_linha, column=1, value=tipo)         # Coluna 1: Tipo
-        sheet.cell(row=proxima_linha, column=2, value=categoria)   # Coluna 2: Categoria
-        sheet.cell(row=proxima_linha, column=3, value=valor)       # Coluna 3: Valor (R$)
-        sheet.cell(row=proxima_linha, column=4, value=tag)         # Coluna 4: Tag
-        sheet.cell(row=proxima_linha, column=5, value=status)      # Coluna 5: Status
+        sheet.cell(row=proxima_linha, column=1, value=tipo)             # Coluna 1: Tipo
+        sheet.cell(row=proxima_linha, column=2, value=categoria)       # Coluna 2: Categoria
+        sheet.cell(row=proxima_linha, column=3, value=data_pagamento) # Coluna 3: Data de PGTO
+        sheet.cell(row=proxima_linha, column=4, value=valor)           # Coluna 4: R$
+        sheet.cell(row=proxima_linha, column=5, value=tag)             # Coluna 5: Tag
+        sheet.cell(row=proxima_linha, column=6, value=status)          # Coluna 6: Status
         
         # Salva o arquivo Excel
         workbook.save(arquivo_excel)
@@ -155,16 +155,17 @@ def main():
             if tipos and categorias and status_list:
                 tipo = st.selectbox("Tipo", tipos)
                 categoria = st.selectbox("Categoria", categorias)
+                data_pagamento = st.date_input("Data de Pagamento")
                 valor = st.number_input("Valor (R$)", min_value=0.0, step=0.01)
                 tag = st.text_input("Tag (Label)")
                 status = st.selectbox("Status", status_list)
 
                 if st.button("Salvar Registro"):
-                    if not tipo or not categoria or not valor or not status:
+                    if not tipo or not categoria or not data_pagamento or not valor or not status:
                         st.error("Todos os campos obrigatórios devem ser preenchidos.")
                     else:
                         # Registra o registro na aba "Base"
-                        if registrar_registro(tipo, categoria, valor, tag, status):
+                        if registrar_registro(tipo, categoria, data_pagamento, valor, tag, status):
                             st.success("Registro salvo com sucesso!")
                         else:
                             st.error("Não foi possível salvar o registro.")

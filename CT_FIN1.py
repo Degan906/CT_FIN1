@@ -11,8 +11,8 @@ def carregar_dados_login():
         return df
     except Exception as e:
         # Exibe mensagens de erro específicas
-        if "Worksheet named 'Login' not found" in str(e):
-            st.error("Erro: A aba 'Login' não foi encontrada no arquivo Excel.")
+        if "HTTP Error 404" in str(e):
+            st.error("Erro: O arquivo não foi encontrado no GitHub. Verifique a URL e a visibilidade do repositório.")
         else:
             st.error(f"Erro ao carregar o arquivo Excel: {e}")
         return None

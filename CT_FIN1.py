@@ -26,6 +26,7 @@ def carregar_categorias():
     try:
         # Carrega a planilha Excel e acessa a aba "Categoria"
         df = pd.read_excel(url, sheet_name="Categoria", engine="openpyxl")
+        st.write("Colunas disponíveis na aba 'Categoria':", df.columns.tolist())  # Exibe as colunas
         return df["Categoria"].tolist()  # Retorna as categorias como uma lista
     except Exception as e:
         st.error(f"Erro ao carregar as categorias: {e}")

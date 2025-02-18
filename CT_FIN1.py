@@ -41,7 +41,7 @@ def main():
             if verificar_login(usuario, senha):
                 st.session_state.logado = True
                 st.success("Login realizado com sucesso!")
-                st.experimental_rerun()  # Recarrega a página após o login
+                st.rerun()  # Recarrega a página após o login
             else:
                 st.error("Usuário ou senha inválidos.")
     else:

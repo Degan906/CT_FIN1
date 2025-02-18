@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from openpyxl import load_workbook
 from io import BytesIO
+from datetime import datetime, timedelta
 
 # Dados de login (usuário e senha)
 credenciais = {
@@ -42,42 +43,6 @@ def carregar_status():
         st.error(f"Erro ao carregar os status: {e}")
         return []
 
-# Função para registrar um novo registro na aba "Base"
-def registrar_registro(tipo, categoria, data_pagamento, valor, tag, status, tipo_conta, parcelas=None):
-    # Caminho para o arquivo Excel
-    arquivo_excel = "FIN_TC1.xlsx"
-    
-    try:
-        # Carrega o arquivo Excel existente
-        workbook = load_workbook(arquivo_excel)
-        
-        # Acessa a aba "Base"
-        if "Base" not in workbook.sheetnames:
-            st.error("A aba 'Base' não foi encontrada no arquivo Excel.")
-            return False
-        
-        sheet = workbook["Base"]
-        
-        # Encontra a próxima linha vazia
-        proxima_linha = sheet.max_row + 1
-        
-        # Adiciona os dados nas colunas corretas
-        sheet.cell(row=proxima_linha, column=1, value=tipo)             # Coluna 1: Tipo
-        sheet.cell(row=proxima_linha, column=2, value=categoria)       # Coluna 2: Categoria
-        sheet.cell(row=proxima_linha, column=3, value=data_pagamento) # Coluna 3: Data de PGTO
-        sheet.cell(row=proxima_linha, column=4, value=valor)           # Coluna 4: R$
-        sheet.cell(row=proxima_linha, column=5, value=tag)             # Coluna 5: Tag
-        sheet.cell(row=proxima_linha, column=6, value=status)          # Coluna 6: Status
-        sheet.cell(row=proxima_linha, column=7, value=tipo_conta)      # Coluna 7: Tipo de Conta
-        sheet.cell(row=proxima_linha, column=8, value=parcelas)        # Coluna 8: Parcelas (se aplicável)
-        
-        # Salva o arquivo Excel
-        workbook.save(arquivo_excel)
-        return True
-    except Exception as e:
-        st.error(f"Erro ao registrar o registro: {e}")
-        return False
-
 # Função para carregar os registros da aba "Base"
 def carregar_registros():
     # Caminho para o arquivo Excel
@@ -91,31 +56,29 @@ def carregar_registros():
         st.error(f"Erro ao carregar os registros: {e}")
         return None
 
-# Função para baixar a planilha
-def baixar_planilha():
-    # Caminho para o arquivo Excel
-    arquivo_excel = "FIN_TC1.xlsx"
-    
-    try:
-        # Lê o arquivo Excel como bytes
-        with open(arquivo_excel, "rb") as f:
-            bytes_data = f.read()
-        
-        # Cria um botão de download
-        st.download_button(
-            label="Baixar Planilha",
-            data=bytes_data,
-            file_name="FIN_TC1.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    except FileNotFoundError:
-        st.error("Erro: O arquivo 'FIN_TC1.xlsx' não foi encontrado.")
+# Função para gerar a tabela dinâmica com base no período
+def gerar_tabela_periodo(df, num_meses):
+    # Filtra os registros dentro do período especificado
+    data_atual = datetime.now()
+    data_inicio = data_atual - timedelta(days=num_meses * 30)  # Aproximação de meses
+    df_filtrado = df[df["Data de PGTO"] >= data_inicio]
 
-# Função para verificar login
-def verificar_login(usuario, senha):
-    if usuario in credenciais and credenciais[usuario] == senha:
-        return True
-    return False
+    # Converte as datas para o formato "YYYY-MM" para agrupar por mês
+    df_filtrado["Mês"] = df_filtrado["Data de PGTO"].dt.to_period("M").astype(str)
+
+    # Agrupa por mês e calcula receitas e despesas
+    tabela = df_filtrado.pivot_table(
+        index="Categoria",
+        columns="Mês",
+        values="R$",
+        aggfunc="sum",
+        fill_value=0
+    )
+
+    # Adiciona a linha de saldo (Receitas - Despesas)
+    tabela.loc["Saldo"] = tabela.sum(axis=0)
+
+    return tabela
 
 # Função principal do Streamlit
 def main():
@@ -143,8 +106,22 @@ def main():
         opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Registro", "Listar Registros", "Baixar Planilha"])
 
         if opcao == "Início":
-            st.write("Bem-vindo à tela inicial!")
-            st.write("Use o menu lateral para navegar.")
+            st.header("Resumo Financeiro por Período")
+
+            # Carrega os registros da aba "Base"
+            df_registros = carregar_registros()
+
+            if df_registros is not None and not df_registros.empty:
+                # Solicita o número de meses ao usuário
+                num_meses = st.number_input("Digite o período em meses:", min_value=1, step=1)
+
+                # Gera a tabela dinâmica
+                tabela = gerar_tabela_periodo(df_registros, num_meses)
+
+                # Exibe a tabela
+                st.dataframe(tabela)
+            else:
+                st.info("Nenhum registro cadastrado.")
 
         elif opcao == "Criar Registro":
             st.header("Criar Novo Registro")

@@ -4,7 +4,7 @@ import pandas as pd
 # Função para carregar os dados do Excel via URL
 def carregar_dados_login():
     # URL "raw" do arquivo no GitHub
-    url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xls"
+    url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
     try:
         # Tenta carregar a planilha Excel e acessar a aba "Login"
         df = pd.read_excel(url, sheet_name="Login")

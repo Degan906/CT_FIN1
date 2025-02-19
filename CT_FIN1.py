@@ -154,8 +154,8 @@ def calcular_projecao(df, meses):
     saldo_final = {"Lançamento": "Saldo Final"}
     for mes in meses_formatados:
         # Calcula o saldo como Receitas - Despesas
-        receitas = df_projecao[df_projecao["Lançamento"].str.contains("Receita")][mes].sum()
-        despesas = df_projecao[df_projecao["Lançamento"].str.contains("Despesa")][mes].sum()
+        receitas = sum([linha[mes] for linha in dados_projecao if linha["Lançamento"].startswith("Receita")])
+        despesas = sum([linha[mes] for linha in dados_projecao if linha["Lançamento"].startswith("Despesa")])
         saldo_final[mes] = receitas + despesas  # Despesas já são negativas
     
     df_projecao = pd.concat([df_projecao, pd.DataFrame([saldo_final])], ignore_index=True)

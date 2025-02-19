@@ -69,6 +69,11 @@ def carregar_registros():
     arquivo_excel = "FIN_TC1.xlsx"
     try:
         df = pd.read_excel(arquivo_excel, sheet_name="Base", engine="openpyxl")
+        # Verifica se as colunas necessárias estão presentes
+        colunas_necessarias = ["Tipo", "Categoria", "Data de PGTO", "R$", "Tag", "Status", "Tipo de Conta"]
+        if not all(col in df.columns for col in colunas_necessarias):
+            st.error(f"Colunas ausentes no arquivo Excel. Certifique-se de que as seguintes colunas existem: {', '.join(colunas_necessarias)}.")
+            return None
         return df
     except Exception as e:
         st.error(f"Erro ao carregar os registros: {e}")
@@ -108,7 +113,7 @@ def calcular_projecao(df, meses):
         tipo = row["Tipo"]
         valor = row["R$"]
         data_pagamento = row["Data de PGTO"]
-        tipo_conta = row["Tipo de Conta"]
+        tipo_conta = row.get("Tipo de Conta", "Fixa")  # Define "Fixa" como padrão se a coluna não existir
         
         if isinstance(data_pagamento, str):
             data_pagamento = datetime.datetime.strptime(data_pagamento, "%Y-%m-%d").date()

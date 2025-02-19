@@ -99,10 +99,10 @@ def verificar_login(usuario, senha):
 def calcular_projecao(df, meses):
     hoje = datetime.date.today()
     datas_futuras = [hoje + datetime.timedelta(days=30 * i) for i in range(meses)]
-    projetado = {}
-    for data in datas_futuras:
-        mes_ano = data.strftime("%b %Y")
-        projetado[mes_ano] = {"Receita": 0, "Despesa": 0}
+    meses_formatados = [data.strftime("%b %Y") for data in datas_futuras]
+    
+    # Criar DataFrame vazio para a projeção
+    dados_projecao = []
     
     for _, row in df.iterrows():
         tipo = row["Tipo"]
@@ -112,21 +112,21 @@ def calcular_projecao(df, meses):
         if isinstance(data_pagamento, str):
             data_pagamento = datetime.datetime.strptime(data_pagamento, "%Y-%m-%d").date()
         
+        linha = {"Lançamento": f"{row['Tag']} ({row['Categoria']})"}
+        saldo_acumulado = 0
+        
         for data in datas_futuras:
+            mes_ano = data.strftime("%b %Y")
             if data_pagamento.month == data.month and data_pagamento.year == data.year:
-                mes_ano = data.strftime("%b %Y")
-                if tipo.lower() == "receita":
-                    projetado[mes_ano]["Receita"] += valor
-                elif tipo.lower() == "despesa":
-                    projetado[mes_ano]["Despesa"] += valor
+                linha[mes_ano] = valor if tipo.lower() == "receita" else -valor
+                saldo_acumulado += valor if tipo.lower() == "receita" else -valor
+            else:
+                linha[mes_ano] = 0
+        
+        linha["Saldo Final"] = saldo_acumulado
+        dados_projecao.append(linha)
     
-    # Criar DataFrame final
-    dados_projecao = []
-    for mes, valores in projetado.items():
-        saldo = valores["Receita"] - valores["Despesa"]
-        dados_projecao.append([mes, valores["Receita"], valores["Despesa"], saldo])
-    
-    df_projecao = pd.DataFrame(dados_projecao, columns=["Mês", "Receita", "Despesa", "Saldo"])
+    df_projecao = pd.DataFrame(dados_projecao)
     return df_projecao
 
 # Função principal do Streamlit

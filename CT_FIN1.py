@@ -108,25 +108,32 @@ def calcular_projecao(df, meses):
         tipo = row["Tipo"]
         valor = row["R$"]
         data_pagamento = row["Data de PGTO"]
+        tipo_conta = row["Tipo de Conta"]
         
         if isinstance(data_pagamento, str):
             data_pagamento = datetime.datetime.strptime(data_pagamento, "%Y-%m-%d").date()
         
         linha = {"Lançamento": f"{row['Tag']} ({row['Categoria']})"}
-        saldo_acumulado = 0
         
         for data in datas_futuras:
             mes_ano = data.strftime("%b %Y")
-            if data_pagamento.month == data.month and data_pagamento.year == data.year:
+            # Verifica se o lançamento é fixo ou ocorre no mês específico
+            if tipo_conta.lower() == "fixa" or (data_pagamento.month == data.month and data_pagamento.year == data.year):
                 linha[mes_ano] = valor if tipo.lower() == "receita" else -valor
-                saldo_acumulado += valor if tipo.lower() == "receita" else -valor
             else:
                 linha[mes_ano] = 0
         
-        linha["Saldo Final"] = saldo_acumulado
         dados_projecao.append(linha)
     
+    # Criar DataFrame final
     df_projecao = pd.DataFrame(dados_projecao)
+    
+    # Adicionar linha de saldo final
+    saldo_final = {"Lançamento": "Saldo Final"}
+    for mes in meses_formatados:
+        saldo_final[mes] = df_projecao[mes].sum()
+    df_projecao = pd.concat([df_projecao, pd.DataFrame([saldo_final])], ignore_index=True)
+    
     return df_projecao
 
 # Função principal do Streamlit

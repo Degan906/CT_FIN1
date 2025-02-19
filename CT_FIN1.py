@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from openpyxl import load_workbook
 from io import BytesIO
+import datetime
 
 # Dados de login (usuário e senha)
 credenciais = {
@@ -13,9 +14,8 @@ credenciais = {
 def carregar_tipos():
     url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
     try:
-        # Carrega a planilha Excel e acessa a aba "Tipo"
         df = pd.read_excel(url, sheet_name="Tipo", engine="openpyxl")
-        return df["Tipo"].tolist()  # Retorna os tipos como uma lista
+        return df["Tipo"].tolist()
     except Exception as e:
         st.error(f"Erro ao carregar os tipos: {e}")
         return []
@@ -24,9 +24,8 @@ def carregar_tipos():
 def carregar_categorias():
     url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
     try:
-        # Carrega a planilha Excel e acessa a aba "Categoria"
         df = pd.read_excel(url, sheet_name="Categoria", engine="openpyxl")
-        return df["Categorias"].tolist()  # Retorna as categorias como uma lista
+        return df["Categorias"].tolist()
     except Exception as e:
         st.error(f"Erro ao carregar as categorias: {e}")
         return []
@@ -35,43 +34,30 @@ def carregar_categorias():
 def carregar_status():
     url = "https://raw.githubusercontent.com/Degan906/CT_FIN1/main/FIN_TC1.xlsx"
     try:
-        # Carrega a planilha Excel e acessa a aba "Status"
         df = pd.read_excel(url, sheet_name="Status", engine="openpyxl")
-        return df["Status"].tolist()  # Retorna os status como uma lista
+        return df["Status"].tolist()
     except Exception as e:
         st.error(f"Erro ao carregar os status: {e}")
         return []
 
 # Função para registrar um novo registro na aba "Base"
 def registrar_registro(tipo, categoria, data_pagamento, valor, tag, status, tipo_conta, parcelas=None):
-    # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
-    
     try:
-        # Carrega o arquivo Excel existente
         workbook = load_workbook(arquivo_excel)
-        
-        # Acessa a aba "Base"
         if "Base" not in workbook.sheetnames:
             st.error("A aba 'Base' não foi encontrada no arquivo Excel.")
             return False
-        
         sheet = workbook["Base"]
-        
-        # Encontra a próxima linha vazia
         proxima_linha = sheet.max_row + 1
-        
-        # Adiciona os dados nas colunas corretas
-        sheet.cell(row=proxima_linha, column=1, value=tipo)             # Coluna 1: Tipo
-        sheet.cell(row=proxima_linha, column=2, value=categoria)       # Coluna 2: Categoria
-        sheet.cell(row=proxima_linha, column=3, value=data_pagamento) # Coluna 3: Data de PGTO
-        sheet.cell(row=proxima_linha, column=4, value=valor)           # Coluna 4: R$
-        sheet.cell(row=proxima_linha, column=5, value=tag)             # Coluna 5: Tag
-        sheet.cell(row=proxima_linha, column=6, value=status)          # Coluna 6: Status
-        sheet.cell(row=proxima_linha, column=7, value=tipo_conta)      # Coluna 7: Tipo de Conta
-        sheet.cell(row=proxima_linha, column=8, value=parcelas)        # Coluna 8: Parcelas (se aplicável)
-        
-        # Salva o arquivo Excel
+        sheet.cell(row=proxima_linha, column=1, value=tipo)
+        sheet.cell(row=proxima_linha, column=2, value=categoria)
+        sheet.cell(row=proxima_linha, column=3, value=data_pagamento)
+        sheet.cell(row=proxima_linha, column=4, value=valor)
+        sheet.cell(row=proxima_linha, column=5, value=tag)
+        sheet.cell(row=proxima_linha, column=6, value=status)
+        sheet.cell(row=proxima_linha, column=7, value=tipo_conta)
+        sheet.cell(row=proxima_linha, column=8, value=parcelas)
         workbook.save(arquivo_excel)
         return True
     except Exception as e:
@@ -80,11 +66,8 @@ def registrar_registro(tipo, categoria, data_pagamento, valor, tag, status, tipo
 
 # Função para carregar os registros da aba "Base"
 def carregar_registros():
-    # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
-    
     try:
-        # Carrega a planilha Excel e acessa a aba "Base"
         df = pd.read_excel(arquivo_excel, sheet_name="Base", engine="openpyxl")
         return df
     except Exception as e:
@@ -93,15 +76,10 @@ def carregar_registros():
 
 # Função para baixar a planilha
 def baixar_planilha():
-    # Caminho para o arquivo Excel
     arquivo_excel = "FIN_TC1.xlsx"
-    
     try:
-        # Lê o arquivo Excel como bytes
         with open(arquivo_excel, "rb") as f:
             bytes_data = f.read()
-        
-        # Cria um botão de download
         st.download_button(
             label="Baixar Planilha",
             data=bytes_data,
@@ -117,11 +95,43 @@ def verificar_login(usuario, senha):
         return True
     return False
 
+# Função para calcular a projeção financeira
+def calcular_projecao(df, meses):
+    hoje = datetime.date.today()
+    datas_futuras = [hoje + datetime.timedelta(days=30 * i) for i in range(meses)]
+    projetado = {}
+    for data in datas_futuras:
+        mes_ano = data.strftime("%b %Y")
+        projetado[mes_ano] = {"Receita": 0, "Despesa": 0}
+    
+    for _, row in df.iterrows():
+        tipo = row["Tipo"]
+        valor = row["R$"]
+        data_pagamento = row["Data de PGTO"]
+        
+        if isinstance(data_pagamento, str):
+            data_pagamento = datetime.datetime.strptime(data_pagamento, "%Y-%m-%d").date()
+        
+        for data in datas_futuras:
+            if data_pagamento.month == data.month and data_pagamento.year == data.year:
+                mes_ano = data.strftime("%b %Y")
+                if tipo.lower() == "receita":
+                    projetado[mes_ano]["Receita"] += valor
+                elif tipo.lower() == "despesa":
+                    projetado[mes_ano]["Despesa"] += valor
+    
+    # Criar DataFrame final
+    dados_projecao = []
+    for mes, valores in projetado.items():
+        saldo = valores["Receita"] - valores["Despesa"]
+        dados_projecao.append([mes, valores["Receita"], valores["Despesa"], saldo])
+    
+    df_projecao = pd.DataFrame(dados_projecao, columns=["Mês", "Receita", "Despesa", "Saldo"])
+    return df_projecao
+
 # Função principal do Streamlit
 def main():
     st.title("Sistema de Login")
-
-    # Verifica se o usuário já está logado
     if "logado" not in st.session_state:
         st.session_state.logado = False
 
@@ -129,31 +139,32 @@ def main():
     if not st.session_state.logado:
         usuario = st.text_input("Usuário")
         senha = st.text_input("Senha", type="password")
-
         if st.button("Entrar"):
             if verificar_login(usuario, senha):
                 st.session_state.logado = True
                 st.success("Login realizado com sucesso!")
-                st.rerun()  # Recarrega a página após o login
+                st.rerun()
             else:
                 st.error("Usuário ou senha inválidos.")
     else:
-        # Tela inicial após o login
         st.sidebar.title("Menu")
         opcao = st.sidebar.selectbox("Escolha uma opção", ["Início", "Criar Registro", "Listar Registros", "Baixar Planilha"])
 
         if opcao == "Início":
-            st.write("Bem-vindo à tela inicial!")
-            st.write("Use o menu lateral para navegar.")
+            st.header("Projeção Financeira")
+            df_registros = carregar_registros()
+            if df_registros is not None and not df_registros.empty:
+                meses = st.slider("Selecione o número de meses para projeção", 1, 24, 6)
+                df_projecao = calcular_projecao(df_registros, meses)
+                st.dataframe(df_projecao)
+            else:
+                st.info("Nenhum registro cadastrado para gerar projeção.")
 
         elif opcao == "Criar Registro":
             st.header("Criar Novo Registro")
-
-            # Carrega os tipos, categorias e status do Excel
             tipos = carregar_tipos()
             categorias = carregar_categorias()
             status_list = carregar_status()
-
             if tipos and categorias and status_list:
                 tipo = st.selectbox("Tipo", tipos)
                 categoria = st.selectbox("Categoria", categorias)
@@ -161,18 +172,14 @@ def main():
                 valor = st.number_input("Valor (R$)", min_value=0.0, step=0.01)
                 tag = st.text_input("Tag (Label)")
                 status = st.selectbox("Status", status_list)
-
-                # Nova funcionalidade: Tipo de Conta
                 tipo_conta = st.selectbox("Tipo de Conta", ["Fixa", "Parcelada"])
                 parcelas = None
                 if tipo_conta == "Parcelada":
                     parcelas = st.number_input("Número de Parcelas", min_value=1, step=1)
-
                 if st.button("Salvar Registro"):
                     if not tipo or not categoria or not data_pagamento or not valor or not status:
                         st.error("Todos os campos obrigatórios devem ser preenchidos.")
                     else:
-                        # Registra o registro na aba "Base"
                         if registrar_registro(tipo, categoria, data_pagamento, valor, tag, status, tipo_conta, parcelas):
                             st.success("Registro salvo com sucesso!")
                         else:
@@ -182,12 +189,8 @@ def main():
 
         elif opcao == "Listar Registros":
             st.header("Registros Cadastrados")
-
-            # Carrega os registros da aba "Base"
             df_registros = carregar_registros()
-
             if df_registros is not None and not df_registros.empty:
-                # Exibe os registros em uma tabela
                 st.dataframe(df_registros)
             else:
                 st.info("Nenhum registro cadastrado.")

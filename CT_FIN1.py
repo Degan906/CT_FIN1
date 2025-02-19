@@ -69,11 +69,34 @@ def carregar_registros():
     arquivo_excel = "FIN_TC1.xlsx"
     try:
         df = pd.read_excel(arquivo_excel, sheet_name="Base", engine="openpyxl")
-        # Verifica se as colunas necessárias estão presentes
+        
+        # Lista de colunas necessárias
         colunas_necessarias = ["Tipo", "Categoria", "Data de PGTO", "R$", "Tag", "Status", "Tipo de Conta"]
+        
+        # Verifica se as colunas existem e cria as ausentes com valores padrão
+        for col in colunas_necessarias:
+            if col not in df.columns:
+                if col == "Tipo":
+                    df[col] = "Despesa"  # Valor padrão para Tipo
+                elif col == "Categoria":
+                    df[col] = "Outros"  # Valor padrão para Categoria
+                elif col == "Data de PGTO":
+                    df[col] = datetime.date.today().strftime("%Y-%m-%d")  # Data atual como padrão
+                elif col == "R$":
+                    df[col] = 0.0  # Valor padrão para R$
+                elif col == "Tag":
+                    df[col] = "Sem Tag"  # Valor padrão para Tag
+                elif col == "Status":
+                    df[col] = "Pendente"  # Valor padrão para Status
+                elif col == "Tipo de Conta":
+                    df[col] = "Fixa"  # Valor padrão para Tipo de Conta
+        
+        # Verifica novamente se todas as colunas estão presentes
         if not all(col in df.columns for col in colunas_necessarias):
-            st.error(f"Colunas ausentes no arquivo Excel. Certifique-se de que as seguintes colunas existem: {', '.join(colunas_necessarias)}.")
+            colunas_ausentes = [col for col in colunas_necessarias if col not in df.columns]
+            st.error(f"Colunas ausentes no arquivo Excel: {', '.join(colunas_ausentes)}. Certifique-se de que todas as colunas necessárias existem.")
             return None
+        
         return df
     except Exception as e:
         st.error(f"Erro ao carregar os registros: {e}")

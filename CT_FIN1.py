@@ -91,12 +91,6 @@ def carregar_registros():
                 elif col == "Tipo de Conta":
                     df[col] = "Fixa"  # Valor padrão para Tipo de Conta
         
-        # Verifica novamente se todas as colunas estão presentes
-        if not all(col in df.columns for col in colunas_necessarias):
-            colunas_ausentes = [col for col in colunas_necessarias if col not in df.columns]
-            st.error(f"Colunas ausentes no arquivo Excel: {', '.join(colunas_ausentes)}. Certifique-se de que todas as colunas necessárias existem.")
-            return None
-        
         return df
     except Exception as e:
         st.error(f"Erro ao carregar os registros: {e}")
@@ -159,7 +153,11 @@ def calcular_projecao(df, meses):
     # Adicionar linha de saldo final
     saldo_final = {"Lançamento": "Saldo Final"}
     for mes in meses_formatados:
-        saldo_final[mes] = df_projecao[mes].sum()
+        # Calcula o saldo como Receitas - Despesas
+        receitas = df_projecao[df_projecao["Lançamento"].str.contains("Receita")][mes].sum()
+        despesas = df_projecao[df_projecao["Lançamento"].str.contains("Despesa")][mes].sum()
+        saldo_final[mes] = receitas - despesas
+    
     df_projecao = pd.concat([df_projecao, pd.DataFrame([saldo_final])], ignore_index=True)
     
     return df_projecao
